@@ -9,6 +9,8 @@
 #include <string.h>
 #include <time.h>
 
+static const int BUFSIZE = 1024;
+
 int main(int argc,char *argv[])
 {
   signal(SIGCHLD, SIG_IGN);
@@ -19,13 +21,13 @@ int main(int argc,char *argv[])
   fork();
   fork();
   fork();
-  //fork();
+  fork();
   //fork();
   //fork();
 
-  char length[2];
+  char length[2], recvBuf[BUFSIZE];
   char buf[]="hello, world\0";
-  short len = strlen(buf)+2;
+  short len = strlen(buf);
   sprintf(length,"%c",len);
 
   int client_sockfd, size, i, n, state;
@@ -52,19 +54,22 @@ int main(int argc,char *argv[])
   for (i=0;i<10;i++) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
+    printf("bf write\n");
     n = write(client_sockfd, length, sizeof length);
     if (n<=0) {
       perror("write err");
       exit(1);
     }
 
-    n = write(client_sockfd, buf, (*((short *)length))-2);
+    printf("bf read1\n");
+    n = write(client_sockfd, buf, (*(short *)length));
     if (n<=0) {
       perror("write err");
       exit(1);
     }
 
-    n = read(client_sockfd, buf, (*((short *)length))-2);
+    printf("bf read2\n");
+    n = read(client_sockfd, recvBuf, (*(short *)length));
     if (n<=0) {
       perror("read err");
       exit(1);

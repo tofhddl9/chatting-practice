@@ -33,7 +33,7 @@ int main(void)
 
   memset(&listenSocket, 0, sizeof(listenSocket));
   listenSocket.sin_family = AF_INET;
-  listenSocket.sin_addr.s_addr = inet_addr("127.0.0.1");
+  listenSocket.sin_addr.s_addr = inet_addr("0.0.0.0");
   listenSocket.sin_port = htons(7777);
 
   if (bind(listenFD, (struct sockaddr *)&listenSocket, sizeof(listenSocket)) < 0) {
