@@ -49,7 +49,7 @@ int main(void)
 
   signal(SIGCHLD, SIG_IGN);
 
-  int status, thIdx=0;
+  int status, thIdx = 0;
   while (1) {
     int clientAddrLen = sizeof(clientAddr);
     if ((connectFD[thIdx] = accept(listenFD, (struct sockaddr *)&clientAddr
@@ -63,11 +63,9 @@ int main(void)
       printf("%d thread create error\n", thIdx);
       exit(1);
     }
-    
     pthread_detach(th[thIdx]);
 
     ++thIdx;
-    printf("%d\n",thIdx );
   }
 
   return 0;
@@ -80,20 +78,18 @@ void *ThFunc(void *a)
   while (1) {
     memset(recvBuf, 0x00, bufSize);
   
-    printf("bf read1\n");  
     if (readn(fd, recvBuf, 2) == 0) {
       break;
     }
     readLen = *(short *)&recvBuf;
-    printf("readLen : %d\n",readLen);
+    if (readLen != 12)
+      printf("readLen : %d\n",readLen);
 
-    printf("bf read2\n");  
     if (readn(fd, recvBuf, readLen) == 0) {
       break;
     }
     recvBuf[readLen] = 0;
 
-    //printf("bf write\n");  
     write(fd, recvBuf, readLen);
   }
 }

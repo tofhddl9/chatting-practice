@@ -67,22 +67,23 @@ int main(void)
 
       while (1) {
         memset(buffer, 0x00, BUFSIZE);
-        printf("[%d] : bf read1\n",cnt);
+        //printf("[%d] : bf read1\n",cnt);
         if (readn(connectFD, buffer, 2) == 0) {
-          printf("[%d] Bye1\n", cnt);
+          //printf("[%d] Bye1\n", cnt);
           break;
         }
-        readLen = *(short *)&buffer;
-        printf("[%d] : bf read2\n",cnt);
-
-        if (readn(connectFD, buffer, readLen-2) == 0) {
-          printf("[%d] Bye2\n", cnt);
+        readLen = (*(short *)&buffer);
+        //printf("[%d] : bf read2\n",cnt);
+        if(readLen != 12)
+          printf("[%d] : %d\n", cnt, readLen);
+        if (readn(connectFD, buffer, readLen) == 0) {
+         // printf("[%d] Bye2\n", cnt);
           break;
         }
-        buffer[readLen-2] = 0;
+        buffer[readLen] = 0;
         int n;
-        printf("[%d] : bf write\n", cnt);
-        if ((n = write(connectFD, buffer, readLen-2)) <= 0) {
+        //printf("[%d] : bf write\n", cnt);
+        if ((n = write(connectFD, buffer, readLen)) <= 0) {
           perror("!!");
         }
         sleep(0);
@@ -93,7 +94,6 @@ int main(void)
     
     else if (pid > 0) {
       //close(connectFD);
-      printf("[%d] hello i'm parent\n", cnt);
     }
 
     else {

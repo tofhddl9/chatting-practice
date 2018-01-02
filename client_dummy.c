@@ -22,15 +22,16 @@ int main(int argc,char *argv[])
   fork();
   fork();
   fork();
-  //fork();
-  //fork();
+  fork();
+  fork();
 
+//  FILE *fp = fopen("output.txt", "w");
   char length[2], recvBuf[BUFSIZE];
   char buf[]="hello, world\0";
   short len = strlen(buf);
   sprintf(length,"%c",len);
-
   int client_sockfd, size, i, n, state;
+
   uint64_t delta_us = 0;
 
   struct sockaddr_in server_addr;
@@ -54,21 +55,22 @@ int main(int argc,char *argv[])
   for (i=0;i<10;i++) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
-    printf("bf write\n");
+    //printf("[%d]bf write\n",getpid());
     n = write(client_sockfd, length, sizeof length);
     if (n<=0) {
       perror("write err");
       exit(1);
     }
-
-    printf("bf read1\n");
+    printf("length : %d%d\n",length[1],length[0]);
+    //printf("[%d]bf read1\n",getpid());
     n = write(client_sockfd, buf, (*(short *)length));
     if (n<=0) {
       perror("write err");
       exit(1);
     }
+    printf("msg : %s\n",buf);
 
-    printf("bf read2\n");
+    //printf("[%d]bf read2\n",getpid());
     n = read(client_sockfd, recvBuf, (*(short *)length));
     if (n<=0) {
       perror("read err");
@@ -79,6 +81,7 @@ int main(int argc,char *argv[])
 
     delta_us += (end.tv_sec - start.tv_sec) * 1000000 +
       (end.tv_nsec - start.tv_nsec)/1000;
+    //printf("%lu\n", delta_us);
     sleep(1);
     
   }
