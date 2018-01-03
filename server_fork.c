@@ -66,7 +66,7 @@ int main(void)
       //close(listenFD);
 
       while (1) {
-        memset(buffer, 0x00, BUFSIZE);
+        memset(buffer, 0, BUFSIZE);
         //printf("[%d] : bf read1\n",cnt);
         if (readn(connectFD, buffer, 2) == 0) {
           //printf("[%d] Bye1\n", cnt);

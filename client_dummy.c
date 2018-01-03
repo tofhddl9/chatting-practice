@@ -25,7 +25,6 @@ int main(int argc,char *argv[])
   fork();
   fork();
 
-//  FILE *fp = fopen("output.txt", "w");
   char length[2], recvBuf[BUFSIZE];
   char buf[]="hello, world\0";
   short len = strlen(buf);
@@ -61,17 +60,15 @@ int main(int argc,char *argv[])
       perror("write err");
       exit(1);
     }
-    printf("length : %d%d\n",length[1],length[0]);
     //printf("[%d]bf read1\n",getpid());
-    n = write(client_sockfd, buf, (*(short *)length));
+    n = write(client_sockfd, buf, *((short *)&length));
     if (n<=0) {
       perror("write err");
       exit(1);
     }
-    printf("msg : %s\n",buf);
 
     //printf("[%d]bf read2\n",getpid());
-    n = read(client_sockfd, recvBuf, (*(short *)length));
+    n = read(client_sockfd, recvBuf, *((short *)&length));
     if (n<=0) {
       perror("read err");
       exit(1);
@@ -81,7 +78,7 @@ int main(int argc,char *argv[])
 
     delta_us += (end.tv_sec - start.tv_sec) * 1000000 +
       (end.tv_nsec - start.tv_nsec)/1000;
-    //printf("%lu\n", delta_us);
+    printf("%lu\n", delta_us);
     sleep(1);
     
   }
