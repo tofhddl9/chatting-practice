@@ -73,17 +73,15 @@ int main(void)
 
 void *ThFunc(void *a)
 {
-  int fd = *(int *)&a, readLen;
+  int fd = (*(int *)a), readLen;
   char recvBuf[bufSize];
   while (1) {
-    memset(&recvBuf, 0, bufSize);
-  
+    memset(recvBuf, 0, bufSize);
     if (readn(fd, recvBuf, 2) == 0) {
       break;
     }
     readLen = *(short *)&recvBuf;
-    if (readLen != 12)
-      printf("readLen : %d\n",readLen);
+    printf("readLen : %d\n",readLen);
 
     if (readn(fd, recvBuf, readLen) == 0) {
       break;
@@ -104,7 +102,7 @@ int readn(int fd, char *buf, short n)
     }
 
     n-= readed;
-    sp += n;
+    sp += readed;
   }
 
   return 1;

@@ -22,8 +22,8 @@ int main(int argc,char *argv[])
   fork();
   fork();
   fork();
-  fork();
-  fork();
+  //fork();
+  //fork();
 
   char length[2], recvBuf[BUFSIZE];
   char buf[]="hello, world\0";

@@ -5,6 +5,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -18,14 +19,18 @@ int main(void)
   struct sockaddr_in serverAddr, clientAddr;
   int clientAddrLen;
   int FDNum;
-  int sockFD, maxFD = 0;
-  int i = 0;
+  int i;
 
   char buf[bufSize];
-  fd_set readFDs, allFDs; 
+  fd_set readFDs, copyFDs; 
 
   if ((listenFD = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
     perror("socket() error");
+    exit(1);
+  }
+
+  if(setsockopt(listenFD, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
+    perror("setsockopt() error");
     exit(1);
   }
 
@@ -46,48 +51,42 @@ int main(void)
   
   FD_ZERO(&readFDs);
   FD_SET(listenFD, &readFDs);
+  int maxFD = listenFD;
 
-  maxFD = listenFD;  
   while (1) {
-    allFDs = readFDs;
-    printf("Select Wait %d\n", maxFD);
-    FDNum = select(maxFD+1, &allFDs, (fd_set *)0, (fd_set *)0, NULL);
+    copyFDs = readFDs;
     
-    if (FD_ISSET(listenFD, &allFDs)) {
+    FDNum = select(maxFD+1, &copyFDs, NULL, NULL, NULL);
+    
+    if (FD_ISSET(listenFD, &copyFDs)) {
       clientAddrLen = sizeof(clientAddr);
       if ((connectFD = accept(listenFD, (struct sockaddr *)&clientAddr,
         &clientAddrLen)) < 0) {
           perror("accept() error");
           exit(1);
       }
-      
       FD_SET(connectFD, &readFDs);
-
       if (connectFD > maxFD) {
         maxFD = connectFD;
       }
-      printf("accept OK\n");
-      continue;
     }
     
-    for (i=0;i<=maxFD;++i) {
-      sockFD = i;
-      if (FD_ISSET(sockFD, &allFDs)) {
-        if (readn(sockFD, buf, 2) == 0) {
+    for (i=0;i<=maxFD+1;++i) {
+      if (FD_ISSET(i, &copyFDs)) {
+        memset(&buf, 0, sizeof(buf));
+        if (readn(i, buf, 2) == 0) {
           break;
         }
         short recvLen = *(short *)&buf;
-        if (readn(sockFD, buf, recvLen) == 0) {
+        printf("[%d] recvLen : %d\n",i,recvLen);
+        if (readn(i, buf, recvLen) == 0) {
           printf("close\n");
-          close(sockFD);
-          FD_CLR(sockFD, &readFDs);
+          close(i);
+          FD_CLR(i, &readFDs);
         }
         else {
           buf[recvLen] = 0;
-          write(sockFD, buf, strlen(buf));
-        }
-        if (--FDNum <= 0) {
-          break;
+          write(i, buf, strlen(buf));
         }
       }
     }
@@ -104,7 +103,7 @@ int readn(int fd, char *buf, short readLen)
       return 0;
     }
     readLen -= readed;
-    sp += readLen;
+    sp += readed;
   }
   return 1;
 }
