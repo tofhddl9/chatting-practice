@@ -57,7 +57,10 @@ int main(void)
     copyFDs = readFDs;
     
     FDNum = select(maxFD+1, &copyFDs, NULL, NULL, NULL);
-    
+   
+    if (FDNum == 0)
+      continue;
+     
     if (FD_ISSET(listenFD, &copyFDs)) {
       clientAddrLen = sizeof(clientAddr);
       if ((connectFD = accept(listenFD, (struct sockaddr *)&clientAddr,
@@ -71,7 +74,7 @@ int main(void)
       }
     }
     
-    for (i=0;i<=maxFD+1;++i) {
+    for (i=0;i<=maxFD;++i) {
       if (FD_ISSET(i, &copyFDs)) {
         memset(&buf, 0, sizeof(buf));
         if (readn(i, buf, 2) == 0) {
