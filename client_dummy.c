@@ -11,6 +11,9 @@
 
 static const int BUFSIZE = 1024;
 
+int readn(int fd, char *buf, short n);
+int writen(int fd, char *buf, short n);
+
 int main(int argc,char *argv[])
 {
   signal(SIGCHLD, SIG_IGN);
@@ -22,13 +25,12 @@ int main(int argc,char *argv[])
   fork();
   fork();
   fork();
-  //fork();
-  //fork();
+  fork();
+  fork();
 
   char length[2], recvBuf[BUFSIZE];
   char buf[]="hello, world\0";
   short len = strlen(buf);
-  sprintf(length,"%c",len);
   int client_sockfd, size, i, n, state;
 
   uint64_t delta_us = 0;
@@ -54,33 +56,74 @@ int main(int argc,char *argv[])
   for (i=0;i<10;i++) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
-    //printf("[%d]bf write\n",getpid());
-    n = write(client_sockfd, length, sizeof length);
+    n = write(client_sockfd, &len, sizeof(len));
     if (n<=0) {
       perror("write err");
       exit(1);
     }
-    //printf("[%d]bf read1\n",getpid());
-    n = write(client_sockfd, buf, *((short *)&length));
+    n = writen(client_sockfd, buf, len);
     if (n<=0) {
       perror("write err");
       exit(1);
     }
-
-    //printf("[%d]bf read2\n",getpid());
-    n = read(client_sockfd, recvBuf, *((short *)&length));
+    n = read(client_sockfd, recvBuf, 2);
     if (n<=0) {
       perror("read err");
       exit(1);
     }
     
+    n = readn(client_sockfd, recvBuf, *((short *)&recvBuf));
+    if (n<=0) {
+      perror("read err");
+      exit(1);
+    }
+
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 
     delta_us += (end.tv_sec - start.tv_sec) * 1000000 +
       (end.tv_nsec - start.tv_nsec)/1000;
-    printf("%lu\n", delta_us);
-    sleep(1);
-    
   }
+  printf("%lu\n", delta_us);
+  close(client_sockfd);
   return 0;
+}
+
+int readn(int fd, char *buf, short n)
+{
+  short sp = 0, readed;
+  while (n) {
+    readed = read(fd, buf+sp, n);
+    if (readed < 0) {
+      perror("read error");
+      exit(1);
+    }
+    else if (readed == 0) {
+      return 0;
+    }
+    sp += readed;
+    n -= readed;
+  }
+  if (readed == 0)
+    return 0;
+  return 1;
+}
+
+int writen(int fd, char *buf, short n)
+{
+  short sp = 0, wroted;
+  while (n) {
+    wroted = write(fd, buf+sp, n);
+    if (wroted < 0) {
+      perror("write error");
+      exit(1);
+    }
+    else if (wroted == 0) {
+      return 0;
+    }
+    sp += wroted;
+    n -= wroted;
+  }
+  if (wroted == 0)
+    return 0;
+  return 1;
 }

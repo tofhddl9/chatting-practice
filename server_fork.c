@@ -13,10 +13,10 @@
 static const int BUFSIZE = 1024;
 
 int readn(int fd, char *buf, short n);
+int writen(int fd, char *buf, short n);
 
 int main(void)
 {
-  int cnt = 0;
   int listenFD, connectFD;
   struct sockaddr_in listenSocket, connectSocket;
   char buffer [BUFSIZE];
@@ -41,14 +41,14 @@ int main(void)
     exit(0);
   }
 
-  if (listen(listenFD, 1) < 0) {
+  if (listen(listenFD, 128) < 0) {
     perror("listen() error\n");
     exit(0);
   }
   
   signal(SIGCHLD, SIG_IGN);
 
-  int connectSocketLen;
+  int connectSocketLen, n;
   short readLen;
   pid_t pid;
 
@@ -59,50 +59,43 @@ int main(void)
       perror("accept() error\n");
       exit(0);
     }
-    
     pid = fork();
-    cnt++;
     if (pid == 0) {
-      //close(listenFD);
-
+      close(listenFD);
       while (1) {
         memset(buffer, 0, BUFSIZE);
-        //printf("[%d] : bf read1\n",cnt);
-        if (readn(connectFD, buffer, 2) == 0) {
-          //printf("[%d] Bye1\n", cnt);
+        if ((n = readn(connectFD, buffer, 2)) == 0) {
+          printf("Bye Client\n");
+          close(connectFD);
           break;
         }
         readLen = (*(short *)&buffer);
-        //printf("[%d] : bf read2\n",cnt);
-        if(readLen != 12)
-          printf("[%d] : %d\n", cnt, readLen);
-        if (readn(connectFD, buffer, readLen) == 0) {
-         // printf("[%d] Bye2\n", cnt);
+        
+        if ((n = readn(connectFD, buffer, readLen)) == 0) {
+          close(connectFD);
           break;
         }
-        buffer[readLen] = 0;
-        int n;
-        //printf("[%d] : bf write\n", cnt);
-        if ((n = write(connectFD, buffer, readLen)) <= 0) {
-          perror("!!");
-        }
+        write(connectFD, &readLen, 2);
+        writen(connectFD, buffer, readLen);
         sleep(0);
       }
-      //close(connectFD);
-      exit(0);
+      if (n == 0) {
+        close(connectFD);
+        break;
+      }
     }
     
     else if (pid > 0) {
-      //close(connectFD);
+      close(connectFD);
     }
 
     else {
       perror("fork() error\n");
       exit(0);
     }
-  }
-  //close(listenFD);
 
+  }
+  close(listenFD);
   return 0;
 }
 
@@ -111,11 +104,40 @@ int readn(int fd, char *buf, short n)
   short sp = 0, readed;
   while (n) {
     readed = read(fd, buf + sp, n);
-    if (readed <= 0) {
+    if (readed < 0) {
+      perror("read() error");
+      exit(1);
+    }
+    else if (readed == 0) {
       return 0;
     }
     n -= readed;
-    sp += n;
+    sp += readed;
+  }
+  if (readed == 0) {
+    return 0;
+  }
+
+  return 1;
+}
+
+int writen(int fd, char *buf, short n)
+{
+  short sp = 0, wroted;
+  while (n) {
+    wroted = write(fd, buf + sp, n);
+    if (wroted < 0) {
+      perror("write() error");
+      exit(1);
+    }
+    else if (wroted == 0) {
+      return 0;
+    }
+    n -= wroted;
+    sp += wroted;
+  }
+  if (wroted == 0) {
+    return 0;
   }
   return 1;
 }
