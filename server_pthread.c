@@ -14,6 +14,7 @@ int threadNum = 1024;
 int bufSize = 1024;
 
 int readn(int fd, char *buf, short n);
+int writen(int fd, char *buf, short n);
 void *ThFunc(void *a);
 
 int main(void)
@@ -42,7 +43,7 @@ int main(void)
     exit(1);
   }
 
-  if (listen(listenFD, 5) < 0) {
+  if (listen(listenFD, 128) < 0) {
     perror("listen() error");
     exit(1);
   }
@@ -78,17 +79,19 @@ void *ThFunc(void *a)
   while (1) {
     memset(recvBuf, 0, bufSize);
     if (readn(fd, recvBuf, 2) == 0) {
+      close(fd);
       break;
     }
     readLen = *(short *)&recvBuf;
     printf("readLen : %d\n",readLen);
 
     if (readn(fd, recvBuf, readLen) == 0) {
+      close(fd);
       break;
     }
+    write(fd, &readLen, 2);
     recvBuf[readLen] = 0;
-
-    write(fd, recvBuf, readLen);
+    writen(fd, recvBuf, readLen);
   }
 }
 
@@ -97,13 +100,36 @@ int readn(int fd, char *buf, short n)
   short sp = 0, readed;
   while (n) {
     readed = read(fd, buf + sp, n);
-    if(readed <= 0) {
+    if (readed < 0) {
+      perror("read error");
+      exit(1);
+    }
+    else if (readed == 0) {
       return 0;
     }
-
     n-= readed;
     sp += readed;
   }
-
+  if (readed == 0)
+    return 0;
   return 1;
 }
+
+int writen(int fd, char *buf, short n)
+{
+  short sp = 0, wroted;
+  while (n) {
+    wroted = write(fd, buf + sp, n);
+    if (wroted < 0) {
+      perror("write error");
+      exit(1);
+    }
+    n-= wroted;
+    sp += wroted;
+  }
+  if (wroted == 0)
+    return 0;
+  return 1;
+}
+
+
